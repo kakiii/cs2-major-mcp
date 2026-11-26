@@ -1,0 +1,39 @@
+{
+  "teams": [
+    "Ninjas in Pyjamas", "PVISION", "HEROIC", "FaZe", "Liquid", "Eternal Fire",
+    "100 Thieves", "9z", "M80", "DENDELE", "Imperial", "Wildcard", "GOSH",
+    "FlyQuest", "Chinggis Warriors", "Lynn Vision"
+  ],
+  "rounds": [
+    [
+      {"winner": "Ninjas in Pyjamas", "loser": "M80"},
+      {"winner": "PVISION", "loser": "DENDELE"},
+      {"winner": "Imperial", "loser": "HEROIC"},
+      {"winner": "Wildcard", "loser": "FaZe"},
+      {"winner": "Liquid", "loser": "GOSH"},
+      {"winner": "FlyQuest", "loser": "Eternal Fire"},
+      {"winner": "100 Thieves", "loser": "Chinggis Warriors"},
+      {"winner": "Lynn Vision", "loser": "9z"}
+    ],
+    [
+      {"winner": "Ninjas in Pyjamas", "loser": "Lynn Vision"},
+      {"winner": "FlyQuest", "loser": "PVISION"},
+      {"winner": "Liquid", "loser": "Wildcard"},
+      {"winner": "Imperial", "loser": "100 Thieves"},
+      {"winner": "HEROIC", "loser": "Chinggis Warriors"},
+      {"winner": "FaZe", "loser": "GOSH"},
+      {"winner": "Eternal Fire", "loser": "DENDELE"},
+      {"winner": "M80", "loser": "9z"}
+    ],
+    [
+      {"winner": "Ninjas in Pyjamas", "loser": "Liquid"},
+      {"winner": "FlyQuest", "loser": "Imperial"},
+      {"winner": "M80", "loser": "HEROIC"},
+      {"winner": "Eternal Fire", "loser": "100 Thieves"},
+      {"winner": "PVISION", "loser": "FaZe"},
+      {"winner": "Lynn Vision", "loser": "Wildcard"},
+      {"winner": "9z", "loser": "DENDELE"},
+      {"winner": "Chinggis Warriors", "loser": "GOSH"}
+    ]
+  ]
+}

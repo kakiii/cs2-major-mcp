@@ -1,0 +1,51 @@
+{
+  "teams": [
+    "Complexity", "HEROIC", "B8", "BetBoom", "TYLOO", "Lynn Vision", "Wildcard", "FlyQuest",
+    "OG", "Chinggis Warriors", "Imperial", "Nemiga", "NRG", "Legacy", "Metizport", "Fluxo"
+  ],
+  "rounds": [
+    [
+      {"winner": "OG", "loser": "Complexity"},
+      {"winner": "HEROIC", "loser": "Chinggis Warriors"},
+      {"winner": "B8", "loser": "Imperial"},
+      {"winner": "BetBoom", "loser": "Nemiga"},
+      {"winner": "NRG", "loser": "TYLOO"},
+      {"winner": "Lynn Vision", "loser": "Legacy"},
+      {"winner": "Wildcard", "loser": "Metizport"},
+      {"winner": "FlyQuest", "loser": "Fluxo"}
+    ],
+    [
+      {"winner": "HEROIC", "loser": "NRG"},
+      {"winner": "B8", "loser": "OG"},
+      {"winner": "FlyQuest", "loser": "BetBoom"},
+      {"winner": "Wildcard", "loser": "Lynn Vision"},
+      {"winner": "Complexity", "loser": "Fluxo"},
+      {"winner": "TYLOO", "loser": "Metizport"},
+      {"winner": "Legacy", "loser": "Chinggis Warriors"},
+      {"winner": "Nemiga", "loser": "Imperial"}
+    ],
+    [
+      {"winner": "HEROIC", "loser": "FlyQuest"},
+      {"winner": "B8", "loser": "Wildcard"},
+      {"winner": "BetBoom", "loser": "Legacy"},
+      {"winner": "Nemiga", "loser": "Lynn Vision"},
+      {"winner": "OG", "loser": "TYLOO"},
+      {"winner": "NRG", "loser": "Complexity"},
+      {"winner": "Chinggis Warriors", "loser": "Fluxo"},
+      {"winner": "Imperial", "loser": "Metizport"}
+    ],
+    [
+      {"winner": "BetBoom", "loser": "Wildcard"},
+      {"winner": "Nemiga", "loser": "FlyQuest"},
+      {"winner": "OG", "loser": "NRG"},
+      {"winner": "Lynn Vision", "loser": "Chinggis Warriors"},
+      {"winner": "Legacy", "loser": "Imperial"},
+      {"winner": "TYLOO", "loser": "Complexity"}
+    ],
+    [
+      {"winner": "Lynn Vision", "loser": "NRG"},
+      {"winner": "Legacy", "loser": "Wildcard"},
+      {"winner": "TYLOO", "loser": "FlyQuest"}
+    ]
+  ]
+}
