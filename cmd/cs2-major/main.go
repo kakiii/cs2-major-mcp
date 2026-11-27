@@ -12,6 +12,7 @@ import (
 	"strconv"
 
 	"cs2-major-mcp/internal/major"
+	"github.com/google/jsonschema-go/jsonschema"
 )
 
 const usage = "usage: cs2-major {status|score|simulate|mcp} [arguments]"
@@ -120,27 +121,32 @@ func decimalFlag(dest *int64) func(string) error {
 	}
 }
 
-func readJSON(path string, dest any) error {
-	f, err := os.Open(path)
+func readJSON[T any](path string, dest *T) error {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	if err := decodeJSON(f, dest); err != nil {
+	schema, err := jsonschema.For[T](nil)
+	if err != nil {
+		return err
+	}
+	resolved, err := schema.Resolve(nil)
+	if err != nil {
+		return err
+	}
+	if err := decodeJSON(data, dest, resolved); err != nil {
 		return fmt.Errorf("%s: %w", path, err)
 	}
 	return nil
 }
 
-func decodeJSON(reader io.Reader, dest any) error {
-	dec := json.NewDecoder(reader)
-	dec.DisallowUnknownFields()
-	if err := dec.Decode(dest); err != nil {
+func decodeJSON(data []byte, dest any, schema *jsonschema.Resolved) error {
+	var value any
+	if err := json.Unmarshal(data, &value); err != nil {
 		return err
 	}
-	var extra json.RawMessage
-	if err := dec.Decode(&extra); err != io.EOF {
-		return errors.New("expected one JSON value")
+	if err := schema.Validate(value); err != nil {
+		return err
 	}
-	return nil
+	return json.Unmarshal(data, dest)
 }

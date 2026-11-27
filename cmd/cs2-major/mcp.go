@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"strconv"
 
 	"cs2-major-mcp/internal/major"
 	"github.com/google/jsonschema-go/jsonschema"
@@ -23,65 +21,69 @@ type scoreInput struct {
 type simulateInput struct {
 	Stage  major.Stage `json:"stage"`
 	Card   *major.Card `json:"card,omitempty"`
-	Trials jsonInteger `json:"trials,omitempty"`
-	Seed   jsonInteger `json:"seed,omitempty"`
-}
-
-type jsonInteger int64
-
-func (n *jsonInteger) UnmarshalJSON(data []byte) error {
-	value, err := strconv.ParseInt(string(data), 10, 64)
-	*n = jsonInteger(value)
-	return err
+	Trials int64       `json:"trials,omitempty"`
+	Seed   int64       `json:"seed,omitempty"`
 }
 
 func serveMCP(ctx context.Context) error {
 	server := mcp.NewServer(&mcp.Implementation{Name: "CS2 Major", Version: "0.1.0"}, nil)
-	mcp.AddTool(server, &mcp.Tool{
+	if err := addTool(server, &mcp.Tool{
 		Name: "stage_status", Description: "Show standings and the remaining matches in the current round.",
-	}, func(_ context.Context, _ *mcp.CallToolRequest, input statusInput) (*mcp.CallToolResult, major.Status, error) {
-		out, err := major.StageStatus(input.Stage)
-		return nil, out, err
-	})
-	mcp.AddTool(server, &mcp.Tool{
+	}, statusInput{}, func(input statusInput) (major.Status, error) {
+		return major.StageStatus(input.Stage)
+	}); err != nil {
+		return err
+	}
+	if err := addTool(server, &mcp.Tool{
 		Name: "score_pickem", Description: "Score a Pick'em card against known results.",
-	}, func(_ context.Context, _ *mcp.CallToolRequest, input scoreInput) (*mcp.CallToolResult, major.Score, error) {
-		out, err := major.ScoreCard(input.Stage, input.Card)
-		return nil, out, err
-	})
-	inputSchema, err := jsonschema.For[simulateInput](nil)
-	if err != nil {
+	}, scoreInput{}, func(input scoreInput) (major.Score, error) {
+		return major.ScoreCard(input.Stage, input.Card)
+	}); err != nil {
 		return err
 	}
-	outputSchema, err := jsonschema.For[major.Simulation](nil)
-	if err != nil {
-		return err
-	}
-	server.AddTool(&mcp.Tool{
+	if err := addTool(server, &mcp.Tool{
 		Name: "simulate_pickem", Description: "Estimate stage outcomes and optional card-score probabilities.",
-		InputSchema: inputSchema, OutputSchema: outputSchema,
-	}, simulateTool)
+	}, simulateInput{Trials: major.DefaultTrials}, func(input simulateInput) (major.Simulation, error) {
+		return major.Simulate(input.Stage, input.Trials, input.Seed, input.Card)
+	}); err != nil {
+		return err
+	}
 	return server.Run(ctx, &mcp.StdioTransport{})
 }
 
-func simulateTool(_ context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	// Decode the raw integer seed before any conversion to a floating-point value.
-	input := simulateInput{Trials: major.DefaultTrials}
-	var result mcp.CallToolResult
-	if err := decodeJSON(bytes.NewReader(request.Params.Arguments), &input); err != nil {
-		result.SetError(err)
-		return &result, nil
-	}
-	out, err := major.Simulate(input.Stage, int64(input.Trials), int64(input.Seed), input.Card)
+func addTool[In, Out any](server *mcp.Server, tool *mcp.Tool, defaults In, run func(In) (Out, error)) error {
+	inputSchema, err := jsonschema.For[In](nil)
 	if err != nil {
-		result.SetError(err)
-		return &result, nil
+		return err
 	}
-	data, err := json.Marshal(out)
+	resolved, err := inputSchema.Resolve(nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	result.Content = []mcp.Content{&mcp.TextContent{Text: string(data)}}
-	result.StructuredContent = json.RawMessage(data)
-	return &result, nil
+	outputSchema, err := jsonschema.For[Out](nil)
+	if err != nil {
+		return err
+	}
+	tool.InputSchema, tool.OutputSchema = inputSchema, outputSchema
+	server.AddTool(tool, func(_ context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		input := defaults
+		var result mcp.CallToolResult
+		if err := decodeJSON(request.Params.Arguments, &input, resolved); err != nil {
+			result.SetError(err)
+			return &result, nil
+		}
+		out, err := run(input)
+		if err != nil {
+			result.SetError(err)
+			return &result, nil
+		}
+		data, err := json.Marshal(out)
+		if err != nil {
+			return nil, err
+		}
+		result.Content = []mcp.Content{&mcp.TextContent{Text: string(data)}}
+		result.StructuredContent = json.RawMessage(data)
+		return &result, nil
+	})
+	return nil
 }

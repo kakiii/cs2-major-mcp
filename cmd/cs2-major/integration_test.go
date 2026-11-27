@@ -72,6 +72,45 @@ func TestBuiltCLIAndMCP(t *testing.T) {
 		}
 	}
 
+	for _, invalid := range []struct {
+		name  string
+		field string
+		value any
+	}{
+		{"wrong field case", "ALL_BO3", true},
+		{"null boolean", "all_bo3", nil},
+	} {
+		t.Run(invalid.name, func(t *testing.T) {
+			snapshot := map[string]any{"teams": stage.Teams, invalid.field: invalid.value}
+			data, err := json.Marshal(snapshot)
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(t.TempDir(), "stage.json")
+			if err := os.WriteFile(path, data, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			out, err := exec.CommandContext(ctx, binary, "status", path).CombinedOutput()
+			if err == nil || !strings.Contains(string(out), invalid.field) {
+				t.Fatalf("CLI accepted invalid input or omitted the field: %q (%v)", out, err)
+			}
+			for _, tool := range []string{"stage_status", "score_pickem", "simulate_pickem"} {
+				input := map[string]any{"stage": snapshot}
+				if tool == "score_pickem" {
+					input["card"] = card
+				}
+				result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: tool, Arguments: input})
+				if err != nil || !result.IsError || len(result.Content) != 1 {
+					t.Fatalf("%s accepted invalid input: %+v (%v)", tool, result, err)
+				}
+				content, ok := result.Content[0].(*mcp.TextContent)
+				if !ok || !strings.Contains(content.Text, invalid.field) {
+					t.Fatalf("%s omitted the invalid field: %+v", tool, result.Content)
+				}
+			}
+		})
+	}
+
 	bad := stage
 	bad.Rounds = [][]major.Result{{{Winner: stage.Teams[0], Loser: stage.Teams[1]}}}
 	result, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "stage_status", Arguments: statusInput{Stage: bad}})
@@ -82,20 +121,21 @@ func TestBuiltCLIAndMCP(t *testing.T) {
 		t.Fatalf("missing pairing diagnostic: %+v", result.Content)
 	}
 
-	const largeSeed = 1<<53 + 1
-	result, err = session.CallTool(ctx, &mcp.CallToolParams{
-		Name: "simulate_pickem", Arguments: simulateInput{Stage: stage, Trials: 1, Seed: largeSeed},
-	})
-	if err != nil || result.IsError || len(result.Content) != 1 {
-		t.Fatalf("large seed call: %+v, %v", result, err)
-	}
-	var simulation major.Simulation
-	content, ok := result.Content[0].(*mcp.TextContent)
-	if !ok {
-		t.Fatalf("expected JSON text, got %+v", result.Content[0])
-	}
-	if err := json.Unmarshal([]byte(content.Text), &simulation); err != nil || simulation.Seed != largeSeed {
-		t.Fatalf("seed lost precision: got %d, want %d (%v)", simulation.Seed, largeSeed, err)
+	for _, seed := range []int64{1<<53 + 1, -1 << 63, 1<<63 - 1} {
+		result, err := session.CallTool(ctx, &mcp.CallToolParams{
+			Name: "simulate_pickem", Arguments: simulateInput{Stage: stage, Trials: 1, Seed: seed},
+		})
+		if err != nil || result.IsError || len(result.Content) != 1 {
+			t.Fatalf("seed %d: result %+v, error %v", seed, result, err)
+		}
+		var simulation major.Simulation
+		content, ok := result.Content[0].(*mcp.TextContent)
+		if !ok {
+			t.Fatalf("expected JSON text, got %+v", result.Content[0])
+		}
+		if err := json.Unmarshal([]byte(content.Text), &simulation); err != nil || simulation.Seed != seed {
+			t.Fatalf("seed lost precision: got %d, want %d (%v)", simulation.Seed, seed, err)
+		}
 	}
 	for _, input := range []map[string]any{
 		{"stage": stage, "seed": nil},
